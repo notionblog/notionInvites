@@ -1,4 +1,4 @@
-import { findUser } from "../lib/notion";
+import { findUser, createEmailUser } from "../lib/notion";
 export default {
   async fetch(request) {
     const { pathname, searchParams } = new URL(request.url);
@@ -13,6 +13,19 @@ export default {
             "content-type": "application/json",
           },
         });
+      } else {
+        // create user
+        const createdUser = await createEmailUser(email);
+        const { userId } = createdUser;
+
+        console.log("user is created: ", userId);
+
+        return new Response(JSON.stringify(createdUser), {
+          headers: {
+            "content-type": "application/json",
+          },
+        });
+        // invite user
       }
     }
 
