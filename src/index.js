@@ -1,32 +1,47 @@
-import { findUser, createEmailUser } from "../lib/notion";
+import {
+  findUser,
+  createEmailUser,
+  getSpace,
+  inviteGuestsToSpace,
+} from "../lib/notion";
 export default {
   async fetch(request) {
     const { pathname, searchParams } = new URL(request.url);
-    if (pathname === "/invite") {
-      const email = searchParams.get("email");
-      console.log("email: ", email);
-      const user = await findUser(email);
-      console.log("user: ", user);
-      if (user && Object.keys(user).length !== 0) {
-        return new Response(JSON.stringify(user), {
+    const email = searchParams.get("email");
+    const workspace = searchParams.get("workspace");
+    if (pathname === "/invite" && email && workspace) {
+      // get space id
+      const space = await getSpace(workspace);
+      if (!space) {
+        return new Response(JSON.stringify({ error: "workspace not found" }), {
+          status: 404,
           headers: {
             "content-type": "application/json",
           },
         });
+      }
+
+      let user = await findUser(email);
+
+      // if user is found
+      if (user && Object.keys(user).length !== 0) {
+        user = user.value.value.id;
       } else {
         // create user
-        const createdUser = await createEmailUser(email);
-        const { userId } = createdUser;
-
-        console.log("user is created: ", userId);
-
-        return new Response(JSON.stringify(createdUser), {
-          headers: {
-            "content-type": "application/json",
-          },
-        });
-        // invite user
+        const { userId } = await createEmailUser(email);
+        user = userId;
       }
+      // invite the user
+      const inviteUser = await inviteGuestsToSpace(
+        "44cfd713a4ae42e893de3ba2d48516da",
+        space,
+        user
+      );
+      return new Response(JSON.stringify(inviteUser), {
+        headers: {
+          "content-type": "application/json",
+        },
+      });
     }
 
     return new Response("Hello World!");
