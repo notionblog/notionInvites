@@ -122,7 +122,10 @@ const getData = async (request, contentType) => {
 };
 export default {
   async fetch(request, env) {
-    if (typeof env.TOKEN_V2 === "undefined") {
+    if (
+      typeof env.TOKEN_V2 === "undefined" ||
+      typeof env.WORKSPACE === "undefined"
+    ) {
       return res.json({ error: "TOKEN_V2 is required" }, 401);
     }
     if (request.method === "POST") {
@@ -130,9 +133,9 @@ export default {
       const { pathname, searchParams } = new URL(request.url);
       const contentType = headers.get("content-type") || "";
 
+      let workspace = env.WORKSPACE;
       // request params
       let email = searchParams.get("email");
-      let workspace = searchParams.get("workspace");
       let pageid = searchParams.get("pageid");
       let permission = searchParams.get("permission");
       if (pathname === "/gumroad") {
@@ -165,9 +168,8 @@ export default {
         } catch (err) {
           res.json({ error: err.stack }, 500);
         }
-      } else {
-        return res.json({ message: "script is running!" }, 200);
       }
     }
+    return res.json({ message: "script is running!" }, 200);
   },
 };
