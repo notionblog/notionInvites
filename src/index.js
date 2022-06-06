@@ -16,17 +16,47 @@ const res = {
   },
 };
 
+const getData = async (request, contentType) => {
+  if (contentType.includes("application/json")) {
+    return JSON.stringify(await request.json());
+  } else if (contentType.includes("application/text")) {
+    return request.text();
+  } else if (contentType.includes("text/html")) {
+    return request.text();
+  } else if (contentType.includes("form")) {
+    const formData = await request.formData();
+    const body = {};
+    for (const entry of formData.entries()) {
+      body[entry[0]] = entry[1];
+    }
+    return JSON.stringify(body);
+  }
+};
 export default {
   async fetch(request) {
+    const { headers } = request;
     const { pathname, searchParams } = new URL(request.url);
+    const contentType = headers.get("content-type") || "";
 
     // request params
-    const email = searchParams.get("email");
-    const workspace = searchParams.get("workspace");
-    const pageid = searchParams.get("pageid");
-    const permission = searchParams.get("permission");
+    let email = searchParams.get("email");
+    let workspace = searchParams.get("workspace");
+    let pageid = searchParams.get("pageid");
+    let permission = searchParams.get("permission");
+    if (pathname === "/gumroad") {
+      console.log("from gumroad");
 
-    if (pathname === "/invite" && email && workspace && pageid && permission) {
+      const gumroadData = await getData(request, contentType);
+      const { email: userEmail, product_permalink } = JSON.parse(gumroadData);
+      const parsePageId = product_permalink.split("/")[4];
+      email = userEmail;
+      pageid = parsePageId;
+    }
+
+    const paths = ["/invite", "/gumroad"];
+    console.log(`----- ${email} -- ${workspace} --- ${pageid}`);
+
+    if (paths.includes(pathname) && email && workspace && pageid) {
       try {
         // get space id
         const space = await getSpace(workspace);
