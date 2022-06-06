@@ -57,7 +57,6 @@ const inviteGuestsToSpace = async (
     comment: "comment_only",
     view: "reader",
   };
-  console.log("permisi L ", permission);
   const body = {
     block: {
       id: _id2uuid(pageId),
@@ -71,7 +70,6 @@ const inviteGuestsToSpace = async (
       },
     ],
   };
-  console.log(JSON.stringify(body));
   const res = await fetch("https://www.notion.so/api/v3/inviteGuestsToSpace", {
     headers: _HEADERS(env),
     body: JSON.stringify(body),
