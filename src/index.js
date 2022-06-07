@@ -142,6 +142,66 @@ async function getData(request, contentType) {
     return JSON.stringify(body);
   }
 }
+async function viaSlack(data, error, SLACK_WEBHOOK) {
+  const { workspace, email, pageid } = data;
+  let content;
+  if (error) {
+    content = {
+      blocks: [
+        {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: `⚠️ Error`,
+            emoji: true,
+          },
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `Invitation failed.\n- Error: ${error}\n please update your Notion token (TOKEN_V2) in your Cloudflare worker`,
+          },
+        },
+      ],
+    };
+  } else {
+    content = {
+      blocks: [
+        {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: `👤 A new user has joined.`,
+            emoji: true,
+          },
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `- Workspace: ${workspace}\n- Page: https://notion.so/${pageid}\n- Email: ${email}     
+          `,
+          },
+        },
+      ],
+    };
+  }
+
+  await fetch(SLACK_WEBHOOK, {
+    method: "POST",
+    body: JSON.stringify(content),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+async function notify(data, error, env) {
+  if (typeof env.SLACK_WEBHOOK !== "undefined")
+    await viaSlack(data, error, env.SLACK_WEBHOOK);
+  // if (typeof DISCORD_WEBHOOK !== "undefined") await _discord(data, error);
+}
 
 export default {
   async fetch(request, env) {
@@ -155,27 +215,28 @@ export default {
       );
     }
     if (request.method === "POST") {
-      const { headers } = request;
-      const { pathname, searchParams } = new URL(request.url);
-      const contentType = headers.get("content-type") || "";
+      try {
+        const { headers } = request;
+        const { pathname, searchParams } = new URL(request.url);
+        const contentType = headers.get("content-type") || "";
 
-      let workspace = env.WORKSPACE;
-      // request params
-      let email = searchParams.get("email");
-      let pageid = searchParams.get("pageid");
-      let permission = searchParams.get("permission");
-      if (pathname === "/gumroad") {
-        const gumroadData = await getData(request, contentType);
-        const { email: userEmail, product_permalink } = JSON.parse(gumroadData);
-        const parsePageId = product_permalink.split("/")[4];
-        email = userEmail;
-        pageid = parsePageId;
-      }
+        let workspace = env.WORKSPACE;
+        // request params
+        let email = searchParams.get("email");
+        let pageid = searchParams.get("pageid");
+        let permission = searchParams.get("permission");
+        if (pathname === "/gumroad") {
+          const gumroadData = await getData(request, contentType);
+          const { email: userEmail, product_permalink } =
+            JSON.parse(gumroadData);
+          const parsePageId = product_permalink.split("/")[4];
+          email = userEmail;
+          pageid = parsePageId;
+        }
 
-      const paths = ["/invite", "/gumroad"];
+        const paths = ["/invite", "/gumroad"];
 
-      if (paths.includes(pathname) && email && workspace && pageid) {
-        try {
+        if (paths.includes(pathname) && email && workspace && pageid) {
           const space = await getSpace(workspace, env);
           if (!space) {
             return res.json({ error: "workspace not found" }, 404);
@@ -190,10 +251,12 @@ export default {
             user = userId;
           }
           await inviteGuestsToSpace(pageid, space, user, permission, env);
+          await notify({ workspace, email, pageid }, null, env);
           return res.json({ success: "user Invited" }, 200);
-        } catch (err) {
-          res.json({ error: err.stack }, 500);
         }
+      } catch (err) {
+        console.log(err.stack);
+        notify(null, error.stack, env);
       }
     }
     return res.json({ message: "script is running!" }, 200);
