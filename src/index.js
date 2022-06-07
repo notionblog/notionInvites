@@ -1,5 +1,16 @@
-const _BASEURL = "https://www.notion.so/api/v3";
 import { v4 as uuidv4 } from "uuid";
+
+const _BASEURL = "https://www.notion.so/api/v3";
+const res = {
+  json(data, status) {
+    return new Response(JSON.stringify({ data }), {
+      status,
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+  },
+};
 
 function _HEADERS(env) {
   return {
@@ -9,13 +20,15 @@ function _HEADERS(env) {
     "Content-Type": "application/json",
   };
 }
-const _id2uuid = (id) =>
-  `${id.substr(0, 8)}-${id.substr(8, 4)}-${id.substr(12, 4)}-${id.substr(
+
+function id2uuid(id) {
+  return `${id.substr(0, 8)}-${id.substr(8, 4)}-${id.substr(12, 4)}-${id.substr(
     16,
     4
   )}-${id.substr(20)}`;
+}
 
-const getSpace = async (name, env) => {
+async function getSpace(name, env) {
   const res = await fetch(`${_BASEURL}/getSpaces`, {
     method: "POST",
     headers: _HEADERS(env),
@@ -28,9 +41,8 @@ const getSpace = async (name, env) => {
     (spaceId) =>
       userSpaces[spaceId].value.name.toLowerCase() === name.toLowerCase()
   );
-};
-
-const createEmailUser = async (email, env) => {
+}
+async function createEmailUser(email, env) {
   const body = {
     email: email,
     preferredLocaleOrigin: "inferred_from_inviter",
@@ -44,34 +56,15 @@ const createEmailUser = async (email, env) => {
   const data = await res.json();
 
   return data;
-};
+}
 
-const inviteGuestsToSpace = async (
-  pageId,
-  spaceId,
-  userId,
-  permission,
-  env
-) => {
+function generateTransaction(userId, spaceId, pageId, permission) {
   const permissions = {
     edit: "read_and_write",
     comment: "comment_only",
     view: "reader",
   };
-  const body = {
-    block: {
-      id: _id2uuid(pageId),
-      spaceId: spaceId,
-    },
-    permissionItems: [
-      {
-        type: "user_permission",
-        role: permissions[permission] || permissions["comment"],
-        user_id: userId,
-      },
-    ],
-  };
-  const bdy2 = {
+  return {
     requestId: uuidv4(),
     transactions: [
       {
@@ -82,7 +75,7 @@ const inviteGuestsToSpace = async (
           {
             pointer: {
               table: "block",
-              id: _id2uuid(pageId),
+              id: id2uuid(pageId),
               spaceId: spaceId,
             },
             command: "setPermissionItem",
@@ -96,7 +89,7 @@ const inviteGuestsToSpace = async (
           {
             pointer: {
               table: "block",
-              id: _id2uuid(pageId),
+              id: id2uuid(pageId),
               spaceId: spaceId,
             },
             path: [],
@@ -107,41 +100,33 @@ const inviteGuestsToSpace = async (
       },
     ],
   };
+}
+
+async function inviteGuestsToSpace(pageId, spaceId, userId, permission, env) {
+  const body = generateTransaction(userId, spaceId, pageId, permission);
+
   const res = await fetch("https://www.notion.so/api/v3/saveTransactions", {
     headers: _HEADERS(env),
-    body: JSON.stringify(bdy2),
+    body: JSON.stringify(body),
     method: "POST",
   });
-  const data = await res.text();
-  console.log("dds -- ", data);
+  const data = await res.json();
   return data;
-};
+}
 
-const findUser = async (email, env) => {
+async function findUser(email, env) {
   const body = { email: email };
 
   const res = await fetch("https://www.notion.so/api/v3/findUser", {
     headers: _HEADERS(env),
-    body: JSON.stringify(body, env),
+    body: JSON.stringify(body),
     method: "POST",
   });
   const data = await res.json();
 
   return data;
-};
-
-const res = {
-  json(data, status) {
-    return new Response(JSON.stringify({ data }), {
-      status,
-      headers: {
-        "content-type": "application/json",
-      },
-    });
-  },
-};
-
-const getData = async (request, contentType) => {
+}
+async function getData(request, contentType) {
   if (contentType.includes("application/json")) {
     return JSON.stringify(await request.json());
   } else if (contentType.includes("application/text")) {
@@ -156,14 +141,18 @@ const getData = async (request, contentType) => {
     }
     return JSON.stringify(body);
   }
-};
+}
+
 export default {
   async fetch(request, env) {
     if (
       typeof env.TOKEN_V2 === "undefined" ||
       typeof env.WORKSPACE === "undefined"
     ) {
-      return res.json({ error: "TOKEN_V2 is required" }, 401);
+      return res.json(
+        { error: "TOKEN_V2 and WORKSPACE sercrets are required" },
+        401
+      );
     }
     if (request.method === "POST") {
       const { headers } = request;
