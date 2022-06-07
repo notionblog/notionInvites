@@ -1,4 +1,5 @@
 const _BASEURL = "https://www.notion.so/api/v3";
+import { v4 as uuidv4 } from "uuid";
 
 function _HEADERS(env) {
   return {
@@ -70,13 +71,49 @@ const inviteGuestsToSpace = async (
       },
     ],
   };
-  const res = await fetch("https://www.notion.so/api/v3/inviteGuestsToSpace", {
+  const bdy2 = {
+    requestId: uuidv4(),
+    transactions: [
+      {
+        id: uuidv4(),
+        spaceId: spaceId,
+        debug: { userAction: "permissionsActions.savePermissionItems" },
+        operations: [
+          {
+            pointer: {
+              table: "block",
+              id: _id2uuid(pageId),
+              spaceId: spaceId,
+            },
+            command: "setPermissionItem",
+            path: ["permissions"],
+            args: {
+              type: "user_permission",
+              role: permissions[permission] || permissions["comment"],
+              user_id: userId,
+            },
+          },
+          {
+            pointer: {
+              table: "block",
+              id: _id2uuid(pageId),
+              spaceId: spaceId,
+            },
+            path: [],
+            command: "update",
+            args: { last_edited_time: Date.now() },
+          },
+        ],
+      },
+    ],
+  };
+  const res = await fetch("https://www.notion.so/api/v3/saveTransactions", {
     headers: _HEADERS(env),
-    body: JSON.stringify(body),
+    body: JSON.stringify(bdy2),
     method: "POST",
   });
   const data = await res.text();
-
+  console.log("dds -- ", data);
   return data;
 };
 

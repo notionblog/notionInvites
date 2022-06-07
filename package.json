@@ -8,5 +8,8 @@
   "scripts": {
     "start": "wrangler dev",
     "publish": "wrangler publish"
+  },
+  "dependencies": {
+    "uuid": "^8.3.2"
   }
 }
