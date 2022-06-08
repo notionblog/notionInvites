@@ -59,9 +59,7 @@ async function createEmailUser(email, env) {
     headers: _HEADERS(env),
     body: JSON.stringify(body),
   });
-  const data = await res.json();
-
-  return data;
+  return await res.json();
 }
 
 function generateTransaction(userId, spaceId, pageId, permission) {
@@ -116,8 +114,7 @@ async function inviteGuestsToSpace(pageId, spaceId, userId, permission, env) {
     body: JSON.stringify(body),
     method: "POST",
   });
-  const data = await res.json();
-  return data;
+  return await res.json();
 }
 
 async function findUser(email, env) {
@@ -128,9 +125,7 @@ async function findUser(email, env) {
     body: JSON.stringify(body),
     method: "POST",
   });
-  const data = await res.json();
-
-  return data;
+  return await res.json();
 }
 async function getData(request, contentType) {
   if (contentType.includes("application/json")) {
