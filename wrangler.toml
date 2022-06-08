@@ -1,4 +1,4 @@
-name = "notioninvites"
+name = "notionprivateinvites"
 main = "src/index.js"
 compatibility_date = "2022-06-06"
 #[secrets]
