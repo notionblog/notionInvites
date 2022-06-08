@@ -60,7 +60,7 @@ After deploying the script, you will be given a public link to your API.
 
 ![Untitled](./assets/8.png)
 
-for example mine here is https://notioninvites.d3vlab.workers.dev
+for example mine is https://notioninvites.d3vlab.workers.dev
 
 To invite a new user, make a **POST** request with the parameters listed below.
 
@@ -121,4 +121,4 @@ for example mind is:
 
 That's it, whenever a guest make a new purchase, Gumoard will automatically submit the user information, and the script will invite the user to the page.
 
-Congratulations, you have successfully set up the script 🥳 If you have any questions, feel free to ask me on Twitter, and if you want to support me, you can donate here, which would be greatly appreciated ❤️
+Congratulations, you have successfully set up the script 🥳 If you have any questions, feel free to ask me on [Twitter](https://twitter.com/_yudax), and if you want to support me, you can [donate here](https://ko-fi.com/yudax), which would be greatly appreciated ❤️
