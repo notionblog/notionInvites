@@ -77,6 +77,8 @@ To invite a new user, make a **POST** request with the parameters listed below.
 
 `permission` the permission you want to grant to the invitee
 
+**fullaccess →** can edit and share with others
+
 **edit →** can edit but not share with others
 
 **comment** → can view and comment but not edit

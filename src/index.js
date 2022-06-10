@@ -67,6 +67,7 @@ function generateTransaction(userId, spaceId, pageId, permission) {
     edit: "read_and_write",
     comment: "comment_only",
     view: "reader",
+    fullaccess: "editor",
   };
   return {
     requestId: uuidv4(),
